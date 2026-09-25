@@ -490,6 +490,15 @@ async function loadRapoarte() {
         }
       }
     }
+    // Salvează CSV-ul în state global ca să nu mai fie re-descărcat
+      if (dataCsv.status === 'success' && dataCsv.csv) {
+        const allRows = parseCSV(dataCsv.csv);
+        if (allRows.length >= 2) {
+          csvHeaders = allRows[0];
+          csvData    = allRows.slice(1);
+          csvLoaded  = true;
+        }
+      }
   } catch(e) { console.warn('CSV locatie load error:', e); }
 
     // ── Adăugăm locatie la fiecare fișier ──
@@ -779,9 +788,14 @@ function handlePrefetchDown(el) {
 // CSV NORMAL
 // ═══════════════════════════════════════════════
 async function loadCsv() {
-  document.getElementById('csvTableWrap').innerHTML = '<div class="state-msg"><div class="spinner"></div><span>' + t('loading_csv') + '</span></div>';
-  document.getElementById('csvStatus').textContent = '';
-  document.getElementById('csvCountBadge').textContent = '';
+  if (csvLoaded) {
+    renderCsvFor(csvData, csvHeaders);
+    document.getElementById('csvStatus').textContent = csvData.length + ' ' + t('records') + ' · ' + csvHeaders.length + ' ' + t('columns');
+    document.getElementById('csvCountBadge').textContent = csvData.length + ' ' + t('rows');
+    document.getElementById('btnExportCsv').disabled = false;
+    return;
+  }
+  // restul funcției rămâne neschimbat...
   try {
     const res  = await fetch(GAS_URL + '?action=csv&token=' + encodeURIComponent(sessionToken));
     const data = await res.json();
