@@ -371,7 +371,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 </div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz7n1CLlmeFC4GIvk0FyKit7mNSH71PupGOqqRcCdxRqlSqRXkgibz-W4b0z7PXnjT2-A/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxvnBMoofMM0P5dqy5whTFLh7pAkc6tPSpY8mvtrUcCCx2ACdZlQ4koJiD_FyCIHNCthA/exec';
 
 // ── State rapoarte normale ──
 let allFiles = [], currentFile = null, currentBlob = null, sessionToken = null;
@@ -764,19 +764,18 @@ function loadFromCache(filename) {
 
 // ── fetchHTML parametrizat ──
 async function fetchHTMLFor(filename) {
-  var folderParam = (currentLang === 'en') ? '&folder=rapoarte_raw_EN' : '';
   const url = GAS_URL + '?action=html&filename=' + encodeURIComponent(filename) +
-              folderParam + '&token=' + encodeURIComponent(sessionToken);
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch(e) { return null; }
-  if (data.status === 'error' && data.message === 'Neautorizat.') { doLogout(); return null; }
-  if (data.status !== 'success') return null;
-  return data.html;
-}
+              '&folder=rapoarte_raw&token=' + encodeURIComponent(sessionToken);
+  const res  = await fetch(url);
+  const data = await res.json();
+  if (data.status !== 'success') throw new Error(data.message || 'Eroare server');
 
+  // Descarcă direct din GitHub raw URL, fără să mai treacă prin GAS
+  const rawRes = await fetch(data.download_url);
+  if (!rawRes.ok) throw new Error('Nu s-a putut descărca fișierul.');
+  return await rawRes.text();
+}
+  
 // ── Prefetch ──
 let prefetching = new Set(), prefetchingTest = new Set();
 
